@@ -1,108 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>TVK Voice Chat Room</title>
-  <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+  <title>TVK Live Voice Chat</title>
+  <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
   <style>
     body {
       background: linear-gradient(to right, orange, white, green);
-      font-family: Arial, sans-serif;
       text-align: center;
-      color: #222;
-      padding-top: 60px;
+      font-family: Arial, sans-serif;
     }
-
-    h1 {
-      font-size: 30px;
-      margin-bottom: 20px;
+    h2 {
+      margin-top: 50px;
+      font-size: 24px;
+      color: #111;
     }
-
     button {
-      padding: 12px 24px;
       margin: 10px;
+      padding: 10px 20px;
       font-size: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
-      color: white;
     }
-
-    .btn-join {
-      background-color: #ff6600;
-    }
-
-    .btn-leave {
-      background-color: #cc0000;
-    }
-
-    .btn-mute {
-      background-color: #007b33;
-    }
-
-    #status {
-      margin-top: 30px;
-      font-size: 18px;
-    }
+    .join { background-color: orange; color: white; }
+    .leave { background-color: red; color: white; }
+    .mute { background-color: green; color: white; }
   </style>
 </head>
 <body>
 
-  <h1>🎙️ TVK Live Voice Chat</h1>
+  <h2>🎤 TVK Live Voice Chat</h2>
 
-  <button class="btn-join" onclick="joinCall()">Join Chat</button>
-  <button class="btn-leave" onclick="leaveCall()">Leave Chat</button>
-  <button class="btn-mute" onclick="toggleMute()">Mute / Unmute</button>
+  <button class="join" onclick="join()">Join Chat</button>
+  <button class="leave" onclick="leave()">Leave Chat</button>
+  <button class="mute" onclick="toggleMute()">Mute / Unmute</button>
 
-  <div id="status">Waiting to join...</div>
+  <p id="status" style="color: red;"></p>
 
   <script>
-    const APP_ID = "8b8a4cda5a3e43c8ad71751ae8b42558"; // Your Agora App ID
-    const CHANNEL = "tvkroom"; // Channel name (room name)
-    const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+    const APP_ID = "8b8a4cda5a3e43c8ad71751ae8b42558";
+    const CHANNEL = "tvkroom";
+    const TOKEN = "007eJxTYHgqeu3ovIfPplmfk3zbc+m4AGue4IV/4kvC5uYe02G5uaJCgcEiySLRJDkl0TTRONXEONkiMcXc0NzUMDHVIsnEyNTU4pF5c0ZDICNDiv88BkYoBPHZGQKKEstSU/MYGABXgSI3";
 
+    let client;
     let localAudioTrack;
-    let joined = false;
+    let isMuted = false;
 
-    async function joinCall() {
-      if (joined) return;
-
+    async function join() {
       try {
-        const uid = await client.join(APP_ID, CHANNEL, null, null);
-        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // Request mic
+        client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        await client.join(APP_ID, CHANNEL, TOKEN, null);
+
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         await client.publish([localAudioTrack]);
 
-        document.getElementById("status").innerText = "✅ Joined the voice chat!";
-        joined = true;
-      } catch (error) {
-        document.getElementById("status").innerText = "❌ Error joining chat: " + error.message;
-        console.error(error);
+        document.getElementById("status").innerText = "✅ Joined voice chat";
+        console.log("Joined voice chat");
+      } catch (err) {
+        document.getElementById("status").innerText = "❌ " + err.message;
+        console.error("Join failed", err);
       }
     }
 
-    async function leaveCall() {
-      if (!joined) return;
-
-      try {
-        localAudioTrack.close(); // Stop mic
-        await client.leave();    // Leave Agora channel
-        document.getElementById("status").innerText = "👋 You have left the voice chat.";
-        joined = false;
-      } catch (error) {
-        console.error("Leave error:", error);
+    async function leave() {
+      if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack.close();
       }
+      if (client) {
+        await client.leave();
+      }
+      document.getElementById("status").innerText = "👋 Left the chat";
     }
 
     function toggleMute() {
       if (!localAudioTrack) return;
-      const isMuted = localAudioTrack.muted;
-      localAudioTrack.setMuted(!isMuted);
-
-      document.getElementById("status").innerText = isMuted
-        ? "🔊 Microphone unmuted"
-        : "🔇 Microphone muted";
+      isMuted = !isMuted;
+      localAudioTrack.setEnabled(!isMuted);
+      document.getElementById("status").innerText = isMuted ? "🔇 Muted" : "🎤 Unmuted";
     }
   </script>
-
 </body>
 </html>
