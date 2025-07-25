@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TVK Voice Chat Room</title>
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to right, orange, white, green);
+      font-family: Arial, sans-serif;
+      text-align: center;
+      color: #222;
+      padding-top: 60px;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btn-join {
+      background-color: #ff6600;
+    }
+
+    .btn-leave {
+      background-color: #cc0000;
+    }
+
+    .btn-mute {
+      background-color: #007b33;
+    }
+
+    #status {
+      margin-top: 30px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ TVK Live Voice Chat</h1>
+
+  <button class="btn-join" onclick="joinCall()">Join Chat</button>
+  <button class="btn-leave" onclick="leaveCall()">Leave Chat</button>
+  <button class="btn-mute" onclick="toggleMute()">Mute / Unmute</button>
+
+  <div id="status">Waiting to join...</div>
+
+  <script>
+    const APP_ID = "8b8a4cda5a3e43c8ad71751ae8b42558"; // Your Agora App ID
+    const CHANNEL = "tvkroom"; // Channel name (room name)
+    const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+    let localAudioTrack;
+    let joined = false;
+
+    async function joinCall() {
+      if (joined) return;
+
+      try {
+        const uid = await client.join(APP_ID, CHANNEL, null, null);
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // Request mic
+        await client.publish([localAudioTrack]);
+
+        document.getElementById("status").innerText = "✅ Joined the voice chat!";
+        joined = true;
+      } catch (error) {
+        document.getElementById("status").innerText = "❌ Error joining chat: " + error.message;
+        console.error(error);
+      }
+    }
+
+    async function leaveCall() {
+      if (!joined) return;
+
+      try {
+        localAudioTrack.close(); // Stop mic
+        await client.leave();    // Leave Agora channel
+        document.getElementById("status").innerText = "👋 You have left the voice chat.";
+        joined = false;
+      } catch (error) {
+        console.error("Leave error:", error);
+      }
+    }
+
+    function toggleMute() {
+      if (!localAudioTrack) return;
+      const isMuted = localAudioTrack.muted;
+      localAudioTrack.setMuted(!isMuted);
+
+      document.getElementById("status").innerText = isMuted
+        ? "🔊 Microphone unmuted"
+        : "🔇 Microphone muted";
+    }
+  </script>
+
+</body>
+</html>
